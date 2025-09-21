@@ -96,7 +96,7 @@ def parse_vrinda(df: pd.DataFrame) -> pd.DataFrame:
     return out.dropna(how="all")
 
 def parse_excel(file) -> pd.DataFrame:
-    xls = pd.ExcelFile(file)
+    xls = _open_xls(file)
     frames = []
     for i, sheet in enumerate(xls.sheet_names):
         df = xls.parse(sheet)
@@ -109,8 +109,8 @@ def parse_excel(file) -> pd.DataFrame:
         # ignore extra sheets
     if not frames:
         return pd.DataFrame()
-    # Return a combined frame; PO uses PO_* fields; RCV rows use Received fields
     return pd.concat(frames, ignore_index=True)
+
 
 # ----------------------------
 # Sidebar upload
@@ -121,6 +121,22 @@ with st.sidebar:
         type=["xlsx", "xls"],
         accept_multiple_files=True,
     )
+import io, os
+
+def _open_xls(uploaded):
+    """Return a pandas.ExcelFile for a Streamlit UploadedFile with the right engine."""
+    name = getattr(uploaded, "name", "")
+    ext = os.path.splitext(name)[1].lower()
+    uploaded.seek(0)
+    data = uploaded.read()
+    bio = io.BytesIO(data)
+    if ext in (".xlsx", ".xlsm"):
+        return pd.ExcelFile(bio, engine="openpyxl")
+    elif ext == ".xls":
+        return pd.ExcelFile(bio, engine="xlrd")
+    else:
+        # fallback: let pandas guess
+        return pd.ExcelFile(bio)
 
 # ----------------------------
 # Parse all & build datasets
@@ -204,7 +220,7 @@ dc_set, inv_set = set(), set()
 if uploads:
     for upl in uploads:
         try:
-            xls = pd.ExcelFile(upl)
+            xls = _open_xls(upl)
             sheets = xls.sheet_names
             for idx in [1, 2]:
                 if len(sheets) <= idx:
