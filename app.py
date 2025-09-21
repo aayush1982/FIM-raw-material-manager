@@ -325,7 +325,7 @@ with c4:
     st.markdown(
         f"""
         <div class="matrix-card">
-            <div class="title">DC Completed / Invoices (Qty)</div>
+            <div class="title">DC (qty) / Invoices (Qty)</div>
             <div class="value">{dc_count:,} / {inv_count:,}</div>
         </div>
         """,
